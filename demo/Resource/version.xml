@@ -1,4 +1,5 @@
-<root>
-	<Version>1.0.0.1</Version>
-	<LinkDownloadZipFile>https://github.com/TiepHoangDev/UpdaterLibrary/raw/master/demo/Resource/App.zip</LinkDownloadZipFile>
-</root>
+<?xml version="1.0" encoding="utf-16"?>
+<LastestVersionInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Version>1.0.0.1</Version>
+  <LinkDownloadZipFile>https://github.com/TiepHoangDev/UpdaterLibrary/raw/master/demo/Resource/App.zip</LinkDownloadZipFile>
+</LastestVersionInfo>

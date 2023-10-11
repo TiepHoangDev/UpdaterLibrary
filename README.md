@@ -20,13 +20,14 @@ ex link to download: http://youlink.com/setup.zip
 
 ### 2. Upload file info your version and provider link to download new version.
 ex file app.xml
-link to download file app.xml: http://youlink.com/app.xml
+link to download file app.xml: http://youlink.com/version.xml
 
 ```
-<root>
-	<Version>1.0.0.2</Version>
-	<LinkDownloadZipFile>http://youlink.com/setup.zip</LinkDownloadZipFile>
-</root>
+<?xml version="1.0" encoding="utf-16"?>
+<LastestVersionInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Version>1.0.0.1</Version>
+  <LinkDownloadZipFile>http://youlink.com/setup.zip</LinkDownloadZipFile>
+</LastestVersionInfo>
 ```
 
 ### 3. Check for update on you program
@@ -43,9 +44,9 @@ namespace Setup
     {
         static void Main(string[] args)
         {
-            var urlDownloadFileXml = "http://youlink.com/app.xml";
+            var urlDownloadFileXml = "http://youlink.com/version.xml";
             var runProgramFile = Path.Combine(Directory.GetCurrentDirectory(), "YouApp.exe");
-            
+
             var param = UpdateParameter.CreateForCheckUpdate(
                 urlGetInfoUpdate: urlDownloadFileXml,
                 currentVersion: Assembly.GetExecutingAssembly().GetName().Version.ToString(),
@@ -57,7 +58,19 @@ namespace Setup
                 folderExtractedZip: default,
                 pathFileZip: default
             );
-            new UpdateExecuter().CheckForUpdateAsync(param).GetAwaiter().GetResult();
+
+            var lastestVersion = new UpdateExecuter().GetLatestVerionAsync(param).Result;
+            var hasNewVersion = new UpdateExecuter().CheckForUpdateAsync(param, lastestVersion).Result;
+            if (hasNewVersion)
+            {
+                var messageError = new UpdateExecuter().RunUpdateAsync(param).Result;
+                Console.WriteLine(messageError);
+            }
+            else
+            {
+                Console.WriteLine("You are lastest version.");
+            }
+            Console.ReadKey();
         }
     }
 }
