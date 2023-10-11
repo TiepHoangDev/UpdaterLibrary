@@ -8,7 +8,7 @@ You can use to update for Winform or Service windows.
     => Check version 
     => Download your file .zip 
     => Extract file .zip
-    => Call you funtion to close your app
+    => Call you function to close your app
     => Replace all file extracted in your app folder
     => Run your commands after success
     => Open you application
