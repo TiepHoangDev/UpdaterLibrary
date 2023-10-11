@@ -8,7 +8,6 @@ using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using UpdaterLibrary.Extractor;
 using System.Xml.Serialization;
 using System.Xml;
 
@@ -97,7 +96,8 @@ namespace UpdaterLibrary
         {
             using (var httpClient = new HttpClient())
             {
-                var textInfo = await httpClient.GetStringAsync(updateParameter.UrlGetInfoUpdate);
+                httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
+                var textInfo = await httpClient.GetStringAsync($"{updateParameter.UrlGetInfoUpdate}?nocahe=true");
                 var stringReader = new StringReader(textInfo);
                 var xmlSerializer = new XmlSerializer(typeof(LastestVersionInfo));
                 var lastestInfo = xmlSerializer.Deserialize(stringReader) as LastestVersionInfo;

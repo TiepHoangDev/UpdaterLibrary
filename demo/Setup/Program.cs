@@ -9,8 +9,8 @@ namespace Setup
     {
         static void Main(string[] args)
         {
-            var urlDownloadFileXml = "https://raw.githubusercontent.com/TiepHoangDev/AutoAndroidReleaseApp/master/info/version.xml";
-            var runProgramFile = Path.Combine(Directory.GetCurrentDirectory(), "AutoRegFbLite.exe");
+            var urlDownloadFileXml = "https://raw.githubusercontent.com/TiepHoangDev/UpdaterLibrary/master/demo/Resource/version.xml";
+            var runProgramFile = Path.Combine(Directory.GetCurrentDirectory(), "Setup.exe");
 
             var param = UpdateParameter.CreateForCheckUpdate(
                 urlGetInfoUpdate: urlDownloadFileXml,
@@ -26,7 +26,16 @@ namespace Setup
 
             var lastestVersion = new UpdateExecuter().GetLatestVerionAsync(param).Result;
             var hasNewVersion = new UpdateExecuter().CheckForUpdateAsync(param, lastestVersion).Result;
-            var updateSuccess = new UpdateExecuter().RunUpdateAsync(param).Result;
+            if (hasNewVersion)
+            {
+                var messageError = new UpdateExecuter().RunUpdateAsync(param).Result;
+                Console.WriteLine(messageError);
+            }
+            else
+            {
+                Console.WriteLine("You are lastest version.");
+            }
+            Console.ReadKey();
         }
     }
 }
