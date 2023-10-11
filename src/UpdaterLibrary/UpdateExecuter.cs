@@ -14,9 +14,17 @@ using System.Xml;
 
 namespace UpdaterLibrary
 {
+    /// <summary>
+    /// Update Executer
+    /// </summary>
     public class UpdateExecuter : IUpdateExecuter
     {
-        public async Task<string> CheckForUpdate(UpdateParameter updateParameter)
+        /// <summary>
+        /// Check For Update Async. Return error message.
+        /// </summary>
+        /// <param name="updateParameter"></param>
+        /// <returns></returns>
+        public async Task<string> RunUpdateAsync(UpdateParameter updateParameter)
         {
             var assemblyCaller = Assembly.GetCallingAssembly();
             if (string.IsNullOrWhiteSpace(updateParameter.ArgumentBuilder.FolderDistition))
@@ -35,67 +43,66 @@ namespace UpdaterLibrary
             updateParameter.OnLog?.Invoke($"PathFolderApplication={updateParameter.ArgumentBuilder.FolderDistition}");
             updateParameter.OnLog?.Invoke($"PathToSaveFile={updateParameter.PathFileZip}");
 
+            var lastestInfo = await GetLatestVerionAsync(updateParameter);
+            var hasNewVersion = await CheckForUpdateAsync(updateParameter, lastestInfo);
+            if (!hasNewVersion) return null;
+
+            if (await DownloadFile(updateParameter, lastestInfo))
+            {
+                updateParameter.OnLog($"Downloaded Successfully");
+                if (ExtractFileUpdate(updateParameter, lastestInfo))
+                {
+                    if (CallReplaceFileApplication(updateParameter, out var processReplaceAndRun))
+                    {
+                        updateParameter.ExitApplication?.Invoke();
+                        return null;
+                    }
+                    return $"Can't copy file update to folder service!";
+                };
+                return $"Can't extract file update!";
+            }
+            return $"Can't download file update!";
+        }
+
+        public async Task<bool> CheckForUpdateAsync(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo = null)
+        {
+            var lastestInfo = lastestVersionInfo ?? await GetLatestVerionAsync(updateParameter);
+            var isAlwaysUpdate = lastestInfo.Version?.Trim() == "*" || string.IsNullOrWhiteSpace(updateParameter.CurrentVersion);
+            if (isAlwaysUpdate)
+            {
+                updateParameter.OnLog?.Invoke($"Always update application.");
+                return true;
+            }
+
+            var lastestVersion = new Version(lastestInfo.Version);
+            var currentVersion = new Version(updateParameter.CurrentVersion);
+            if (lastestVersion < currentVersion)
+            {
+                var err = $"Current version is higher than latest version. Current Version={currentVersion}?. Lastest version = {lastestVersion}.";
+                updateParameter.OnLog?.Invoke(err);
+                return false;
+            }
+
+            if (lastestVersion == currentVersion)
+            {
+                var err = $"You version is lastest.";
+                updateParameter.OnLog?.Invoke(err);
+                return false;
+            }
+            updateParameter.OnLog?.Invoke($"Have new version. Need to upgrate from {currentVersion} -> {lastestVersion}.");
+            return true;
+        }
+
+        public async Task<LastestVersionInfo> GetLatestVerionAsync(UpdateParameter updateParameter)
+        {
             using (var httpClient = new HttpClient())
             {
                 var textInfo = await httpClient.GetStringAsync(updateParameter.UrlGetInfoUpdate);
-                var lastestInfo = GetInfoUpdate<LastestVersionInfo>(textInfo);
-                var isAlwaysUpdate = lastestInfo.Version?.Trim() == "*" || string.IsNullOrWhiteSpace(updateParameter.CurrentVersion);
-                if (isAlwaysUpdate)
-                {
-                    updateParameter.OnLog?.Invoke($"Always update application.");
-                }
-                else
-                {
-                    var lastestVersion = new Version(lastestInfo.Version);
-                    var currentVersion = new Version(updateParameter.CurrentVersion);
-                    if (lastestVersion < currentVersion)
-                    {
-                        var err = $"What wrong with your version ?({currentVersion}?. Lastest version = {lastestVersion}.";
-                        updateParameter.OnLog?.Invoke(err);
-                        return err;
-                    }
-                    if (lastestVersion == currentVersion)
-                    {
-                        var err = $"You version is lastest.";
-                        updateParameter.OnLog?.Invoke(err);
-                        return err;
-                    }
-                    updateParameter.OnLog?.Invoke($"Have new version. Need to upgratefrom {currentVersion} -> {lastestVersion}.");
-                }
-
-                if (await DownloadFile(updateParameter, lastestInfo))
-                {
-                    updateParameter.OnLog($"Downloaded Successfully");
-                    if (ExtractFileUpdate(updateParameter, lastestInfo))
-                    {
-                        if (CallReplaceFileApplication(updateParameter, out var processReplaceAndRun))
-                        {
-                            updateParameter.ExitApplication?.Invoke();
-                            return null;
-                        }
-                        return $"Can't copy file update to folder service!";
-                    };
-                    return $"Can't extract file update!";
-                }
-                return $"Can't download file update!";
+                var stringReader = new StringReader(textInfo);
+                var xmlSerializer = new XmlSerializer(typeof(LastestVersionInfo));
+                var lastestInfo = xmlSerializer.Deserialize(stringReader) as LastestVersionInfo;
+                return lastestInfo;
             }
-        }
-
-        private T GetInfoUpdate<T>(string textInfo)
-        {
-            var xmlSerializer = new XmlSerializer(typeof(T), new XmlRootAttribute("root"));
-            var settings = new XmlWriterSettings()
-            {
-                //format the xml string
-                Indent = true,
-                //skip declare xml
-                OmitXmlDeclaration = true,
-            };
-            var emptyNamespaces = new XmlSerializerNamespaces(new[] { XmlQualifiedName.Empty });
-
-            StringReader stringReader = new StringReader(textInfo);
-            T xmlObject = (T)xmlSerializer.Deserialize(stringReader);
-            return xmlObject;
         }
 
         private bool CallReplaceFileApplication(UpdateParameter updateParameter, out Process processReplaceAndRun)

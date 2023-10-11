@@ -8,6 +8,8 @@ namespace UpdaterLibrary
 {
     public interface IUpdateExecuter
     {
-        Task<string> CheckForUpdate(UpdateParameter info);
+        Task<string> RunUpdateAsync(UpdateParameter updateParameter);
+        Task<bool> CheckForUpdateAsync(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo);
+        Task<LastestVersionInfo> GetLatestVerionAsync(UpdateParameter updateParameter);
     }
 }

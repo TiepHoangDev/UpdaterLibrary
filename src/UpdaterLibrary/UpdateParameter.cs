@@ -75,10 +75,4 @@ namespace UpdaterLibrary
         }
 
     }
-
-    public class LastestVersionInfo
-    {
-        public string Version { get; set; }
-        public string LinkDownloadZipFile { get; set; }
-    }
 }
