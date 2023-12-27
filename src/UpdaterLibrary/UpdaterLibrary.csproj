@@ -1,19 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <OutputType>Library</OutputType>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <RegisterForComInterop>false</RegisterForComInterop>
-  </PropertyGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Runner\UpdaterLibrary.Extractor.exe" />
-  </ItemGroup>
-  <PropertyGroup>
-    <PreBuildEvent>Powershell -Command "(Get-Content '$(ProjectDir)Properties\AssemblyInfo.cs') -replace ('\(\"\d+\.\d+\.\d+\.\d+\"\)'), ('(\"' + (Get-Date).ToString('yyyy.M.d.Hm') + '\")') | Set-Content '$(ProjectDir)Properties\AssemblyInfo.cs'"</PreBuildEvent>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-  </ItemGroup>
+
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
 </Project>
