@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace UpdaterLibrary.Extractor
 {
-    internal class ExtractorRunner
+    public class ExtractorRunner
     {
         public async Task<bool> Run(ArgumentBuilder argument)
         {
@@ -29,12 +29,11 @@ namespace UpdaterLibrary.Extractor
                     var name = Path.GetFileNameWithoutExtension(argument.RunProgramFile);
                     while (true)
                     {
-                        var process = Process.GetProcessesByName(name).FirstOrDefault(q => q.MainModule.FileName?.Trim().Equals(argument.RunProgramFile.Trim(), StringComparison.CurrentCultureIgnoreCase) == true);
-                        if (process == null) break;
-
                         try
                         {
-                            var waitMs = 60;
+                            var process = Process.GetProcessesByName(name).FirstOrDefault(q => q.MainModule?.FileName?.Trim().Equals(argument.RunProgramFile.Trim(), StringComparison.CurrentCultureIgnoreCase) == true);
+                            if (process == null) break;
+                            var waitMs = 30;
                             while (!process.HasExited && waitMs > 0)
                             {
                                 Console.Write($"\r>\t Wait {process.ProcessName} [Id={process.Id}] exit in {waitMs} seconds... ");
@@ -57,6 +56,7 @@ namespace UpdaterLibrary.Extractor
                         catch (Exception ex)
                         {
                             Console.WriteLine(ex);
+                            Program.LogToFile(ex);
                         }
                     }
                 }
@@ -112,6 +112,7 @@ namespace UpdaterLibrary.Extractor
             catch (Exception ex)
             {
                 Console.WriteLine($">\t Exception: {ex}");
+                Program.LogToFile(ex);
             }
             finally
             {

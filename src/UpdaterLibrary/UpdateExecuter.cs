@@ -25,10 +25,10 @@ namespace UpdaterLibrary
         /// <returns></returns>
         public async Task<string> RunUpdateAsync(UpdateParameter updateParameter)
         {
-            var assemblyCaller = Assembly.GetCallingAssembly();
+            var assemblyMain = Assembly.GetEntryAssembly();
             if (string.IsNullOrWhiteSpace(updateParameter.ArgumentBuilder.FolderDistition))
             {
-                updateParameter.ArgumentBuilder.FolderDistition = assemblyCaller.Location;
+                updateParameter.ArgumentBuilder.FolderDistition = Path.GetDirectoryName(assemblyMain.Location);
             }
             if (string.IsNullOrWhiteSpace(updateParameter.PathFileZip))
             {
@@ -37,7 +37,9 @@ namespace UpdaterLibrary
                     $"updateFor_{updateParameter.CurrentVersion}_{Guid.NewGuid()}.zip");
             }
 
+#if DEBUG
             updateParameter.OnLog?.Invoke($"UrlGetInfoUpdate={updateParameter.UrlGetInfoUpdate}");
+#endif
             updateParameter.OnLog?.Invoke($"CurrentVersion={updateParameter.CurrentVersion}");
             updateParameter.OnLog?.Invoke($"PathFolderApplication={updateParameter.ArgumentBuilder.FolderDistition}");
             updateParameter.OnLog?.Invoke($"PathToSaveFile={updateParameter.PathFileZip}");
