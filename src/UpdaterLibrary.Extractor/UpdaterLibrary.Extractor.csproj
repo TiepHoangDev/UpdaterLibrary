@@ -2,9 +2,16 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFramework>net7.0-windows</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<StartupObject>UpdaterLibrary.Extractor.Program</StartupObject>
+		<BaseOutputPath>D:\PROJECTS\UpdaterLibrary\src\UpdaterLibrary\Runner</BaseOutputPath>
+		<BaseIntermediateOutputPath>D:\PROJECTS\UpdaterLibrary\src\UpdaterLibrary\Runner</BaseIntermediateOutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <Optimize>True</Optimize>
 	</PropertyGroup>
 
 </Project>
