@@ -96,10 +96,7 @@ namespace UpdaterLibrary
             {
                 httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
                 var textInfo = await httpClient.GetStringAsync($"{updateParameter.UrlGetInfoUpdate}?nocahe=true");
-                var stringReader = new StringReader(textInfo);
-                var xmlSerializer = new XmlSerializer(typeof(LastestVersionInfo));
-                var lastestInfo = xmlSerializer.Deserialize(stringReader) as LastestVersionInfo;
-                return lastestInfo;
+                return LastestVersionInfo.LoadFromXml(textInfo);
             }
         }
 
