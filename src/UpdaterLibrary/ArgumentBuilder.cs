@@ -35,7 +35,7 @@ public class ArgumentBuilder
         if (!string.IsNullOrWhiteSpace(ExecuteCmdWhenCopySuccessful))
             stringBuilder.Append($" --executecmd \"{ExecuteCmdWhenCopySuccessful}\" ");
         if (!string.IsNullOrWhiteSpace(RunProgramFile))
-            stringBuilder.Append($" --runapp \" {RunProgramFile} \" ");
+            stringBuilder.Append($" --runapp \"{RunProgramFile}\" ");
         return stringBuilder.ToString();
     }
 
@@ -63,19 +63,19 @@ public class ArgumentBuilder
             switch (arg)
             {
                 case "--from":
-                    argument.FolderSource = args[i + 1];
+                    argument.FolderSource = Convert.ToString(args[i + 1]).Trim();
                     break;
                 case "--to":
-                    argument.FolderDistition = args[i + 1];
+                    argument.FolderDistition = Convert.ToString(args[i + 1]).Trim();
                     break;
                 case "--executecmd":
-                    var runSuccessCommand = args[i + 1];
+                    var runSuccessCommand = Convert.ToString(args[i + 1]).Trim();
                     argument.ExecuteCmdWhenCopySuccessfuls = runSuccessCommand.Split('|')
                         .Select(q => q.Replace("`", "\""))
                         .ToList();
                     break;
                 case "--runapp":
-                    argument.RunProgramFile = args[i + 1];
+                    argument.RunProgramFile = Convert.ToString(args[i + 1]).Trim();
                     break;
                 default:
                     break;

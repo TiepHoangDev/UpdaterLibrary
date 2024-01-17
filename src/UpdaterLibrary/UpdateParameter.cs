@@ -44,7 +44,7 @@ namespace UpdaterLibrary
         /// <summary>
         /// ArgumentBuilder parameter to pass to Extrator.
         /// </summary>
-        public ArgumentBuilder ArgumentBuilder { get; private set; } = new ArgumentBuilder();
+        public ArgumentBuilder ArgumentBuilder { get; set; } = new ArgumentBuilder();
 
         public static UpdateParameter CreateForCheckUpdate(string urlGetInfoUpdate,
             string currentVersion,

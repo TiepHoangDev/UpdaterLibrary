@@ -1,26 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
-    <OutputType>Library</OutputType>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <RegisterForComInterop>false</RegisterForComInterop>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Net.Http">
-      <HintPath>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\Microsoft.NET.Build.Extensions\net461\lib\System.Net.Http.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Runner\UpdaterLibrary.Extractor.exe" />
-  </ItemGroup>
-  <!--<PropertyGroup>
-    <PreBuildEvent>Powershell -Command "(Get-Content '$(ProjectDir)Properties\AssemblyInfo.cs') -replace ('\(\"\d+\.\d+\.\d+\.\d+\"\)'), ('(\"' + (Get-Date).ToString('yyyy.M.d.Hm') + '\")') | Set-Content '$(ProjectDir)Properties\AssemblyInfo.cs'"</PreBuildEvent>
-  </PropertyGroup>-->
+	<PropertyGroup>
+		<TargetFramework>net461</TargetFramework>
+		<OutputType>Library</OutputType>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+		<RegisterForComInterop>false</RegisterForComInterop>
+	</PropertyGroup>
+	<PropertyGroup>
+		<BuildVersion>$([System.DateTime]::UtcNow.ToLocalTime().ToString("yyyy.M.d.Hmm"))</BuildVersion>
+		<AssemblyVersion>$(BuildVersion)</AssemblyVersion>
+		<Authors>tiephoangdev</Authors>
+	</PropertyGroup>
+	<ItemGroup>
+	  <None Remove="Runner\UpdaterLibrary.Extractor.exe" />
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Include="Runner\UpdaterLibrary.Extractor.exe" />
+	</ItemGroup>
+	<ItemGroup>
+		<Reference Include="System.IO.Compression" />
+		<Reference Include="System.Net.Http">
+			<HintPath>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\Microsoft.NET.Build.Extensions\net461\lib\System.Net.Http.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+		<PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+	</ItemGroup>
 </Project>

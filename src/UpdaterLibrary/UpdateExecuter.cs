@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 
 namespace UpdaterLibrary
 {
@@ -25,12 +25,16 @@ namespace UpdaterLibrary
             if (string.IsNullOrWhiteSpace(updateParameter.ArgumentBuilder.FolderDistition))
             {
                 updateParameter.ArgumentBuilder.FolderDistition = Path.GetDirectoryName(assemblyMain.Location);
+                var dir = Path.GetDirectoryName(updateParameter.ArgumentBuilder.FolderDistition);
+                Directory.CreateDirectory(dir);
             }
             if (string.IsNullOrWhiteSpace(updateParameter.PathFileZip))
             {
-                updateParameter.PathFileZip = Path.Combine(
-                    Path.GetTempPath(),
-                    $"updateFor_{updateParameter.CurrentVersion}_{Guid.NewGuid()}.zip");
+                var dir = Path.GetDirectoryName(updateParameter.ArgumentBuilder.FolderDistition);
+                var filename = $"updateFor_{updateParameter.CurrentVersion}_{Guid.NewGuid()}.zip";
+                updateParameter.PathFileZip = Path.Combine(dir, filename);
+                dir = Path.GetDirectoryName(updateParameter.PathFileZip);
+                Directory.CreateDirectory(dir);
             }
 
 #if DEBUG
@@ -42,11 +46,11 @@ namespace UpdaterLibrary
 
             var lastestInfo = await GetLatestVerionAsync(updateParameter);
             var hasNewVersion = await CheckForUpdateAsync(updateParameter, lastestInfo);
-            if (!hasNewVersion) return null;
+            if (!hasNewVersion) return "latest";
 
             if (await DownloadFile(updateParameter, lastestInfo))
             {
-                updateParameter.OnLog($"Downloaded Successfully");
+                updateParameter.OnLog?.Invoke($"Downloaded Successfully");
                 if (ExtractFileUpdate(updateParameter, lastestInfo))
                 {
                     if (CallReplaceFileApplication(updateParameter, out var processReplaceAndRun))
@@ -54,7 +58,7 @@ namespace UpdaterLibrary
                         updateParameter.ExitApplication?.Invoke();
                         return null;
                     }
-                    return $"Can't copy file update to folder service!";
+                    return $"Can't Call Replace File Application";
                 };
                 return $"Can't extract file update!";
             }
@@ -95,7 +99,8 @@ namespace UpdaterLibrary
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
-                var textInfo = await httpClient.GetStringAsync($"{updateParameter.UrlGetInfoUpdate}?nocahe=true");
+                var url = $"{updateParameter.UrlGetInfoUpdate}?nocahe=true";
+                var textInfo = await httpClient.GetStringAsync(url);
                 return LastestVersionInfo.LoadFromXml(textInfo);
             }
         }
@@ -126,71 +131,49 @@ namespace UpdaterLibrary
             if (!File.Exists(pathFileExtractor)) return false;
 
             var argumentString = updateParameter.ArgumentBuilder.ToCommandArgument();
-            processReplaceAndRun = Process.Start(new ProcessStartInfo
-            {
-                FileName = pathFileExtractor,
-                Arguments = argumentString,
-                Verb = "runas",
-            });
-
+            Process.Start(pathFileExtractor, argumentString);
             return true;
         }
 
         private bool ExtractFileUpdate(UpdateParameter updateParameter, LastestVersionInfo lastestInfo)
         {
+            //check file
             var fileZip = updateParameter.PathFileZip;
             if (!File.Exists(fileZip)) return false;
 
-            var folderExtractZip = Path.Combine(
-                    Path.GetDirectoryName(fileZip),
-                    "folderExtractZip"
-                );
+            //empty folder
+            var dir = Path.GetDirectoryName(fileZip);
+            var folderExtractZip = Path.Combine(dir, "folderExtractZip");
             updateParameter.ArgumentBuilder.FolderSource = folderExtractZip;
+            if (Directory.Exists(folderExtractZip)) Directory.Delete(folderExtractZip, true);
+            Directory.CreateDirectory(folderExtractZip);
 
-            using (var archive = ZipFile.OpenRead(fileZip))
+            //extract zip
+            using (var zip = ZipFile.OpenRead(fileZip))
             {
-                var entries = archive.Entries;
-                for (int i = 0; i < entries.Count; i++)
+                var count = zip.Entries.Count;
+                var index = 0F;
+                foreach (var item in zip.Entries)
                 {
-                    var entry = entries[i];
-                    var filePath = Path.Combine(folderExtractZip, entry.FullName);
-                    var folder = Path.GetDirectoryName(filePath);
-                    if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-
-                    if (IsDirectory(entry))
+                    index++;
+                    var path = Path.Combine(folderExtractZip, item.FullName);
+                    var isDirectory = item.FullName.EndsWith("/") || item.FullName.EndsWith("\\");
+                    var directory = isDirectory ? path : Path.GetDirectoryName(path);
+                    Directory.CreateDirectory(directory);
+                    if (isDirectory)
                     {
-                        if (!Directory.Exists(filePath))
-                        {
-                            Directory.CreateDirectory(filePath);
-                        }
+                        if (File.Exists(path)) File.Delete(path);
+                        item.ExtractToFile(path);
                     }
-                    else
-                    {
-                        if (File.Exists(filePath))
-                        {
-                            updateParameter.OnLog($"Delete file {filePath}");
-                            File.Delete(filePath);
-                        }
-
-                        using (Stream destination = File.Open(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-                        {
-                            using (Stream stream = entry.Open())
-                            {
-                                stream.CopyTo(destination);
-                                destination.SetLength(destination.Position);
-                            }
-                        }
-                    }
-
-                    updateParameter.OnLog($"{i + 1}. Extracted {entry.FullName} {i + 1}/{entries.Count}");
+                    var percent = Math.Round(index * 100 / count);
+                    updateParameter.OnLog?.Invoke($"[{percent}%] {path}");
                 }
-                return true;
             }
-        }
 
-        public static bool IsDirectory(ZipArchiveEntry entry)
-        {
-            return string.IsNullOrEmpty(entry.Name) && (entry.FullName.EndsWith("/") || entry.FullName.EndsWith(@"\"));
+            //delete file zip
+            if (File.Exists(fileZip)) File.Delete(fileZip);
+
+            return true;
         }
 
         private async Task<bool> DownloadFile(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo)
