@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ClassHelper;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -96,12 +98,31 @@ namespace UpdaterLibrary
 
         public async Task<LastestVersionInfo> GetLatestVerionAsync(UpdateParameter updateParameter)
         {
-            using (var httpClient = new HttpClient())
+            try
             {
-                httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
-                var url = $"{updateParameter.UrlGetInfoUpdate}?nocahe=true";
-                var textInfo = await httpClient.GetStringAsync(url);
-                return LastestVersionInfo.LoadFromXml(textInfo);
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
+                    var url = $"{updateParameter.UrlGetInfoUpdate}?nocahe=true";
+                    var reponse = await httpClient.GetAsync(url);
+                    var textInfo = await reponse.Content.ReadAsStringAsync();
+                    if (reponse?.IsSuccessStatusCode ?? false)
+                    {
+                        return LastestVersionInfo.LoadFromXml(textInfo);
+                    }
+                    var msgs = new[] {
+                        $"{(int)reponse.StatusCode} {reponse.RequestMessage.Method} {reponse.ReasonPhrase}",
+                        reponse.RequestMessage.RequestUri.ToString(),
+                        textInfo
+                    };
+                    throw new Exception(string.Join("\n", msgs));
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                ex.Log();
+                throw;
             }
         }
 
