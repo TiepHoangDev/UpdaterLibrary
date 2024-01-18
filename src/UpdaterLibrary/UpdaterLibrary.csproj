@@ -16,7 +16,9 @@
 	  <None Remove="Runner\UpdaterLibrary.Extractor.exe" />
 	</ItemGroup>
 	<ItemGroup>
-	  <EmbeddedResource Include="Runner\UpdaterLibrary.Extractor.exe" />
+	  <EmbeddedResource Include="Runner\UpdaterLibrary.Extractor.exe">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 		<Reference Include="System.IO.Compression" />
@@ -27,5 +29,8 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\UpdaterLibrary.Extractor\UpdaterLibrary.Extractor.csproj" />
 	</ItemGroup>
 </Project>
