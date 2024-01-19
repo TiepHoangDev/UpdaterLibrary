@@ -21,7 +21,7 @@ namespace UpdaterLibrary
         /// </summary>
         /// <param name="updateParameter"></param>
         /// <returns></returns>
-        public async Task<string> RunUpdateAsync(UpdateParameter updateParameter)
+        public async Task<string> RunUpdateAsync(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo = null)
         {
             var assemblyMain = Assembly.GetEntryAssembly();
             if (string.IsNullOrWhiteSpace(updateParameter.ArgumentBuilder.FolderDistition))
@@ -33,7 +33,9 @@ namespace UpdaterLibrary
             if (string.IsNullOrWhiteSpace(updateParameter.PathFileZip))
             {
                 var dir = Path.GetDirectoryName(updateParameter.ArgumentBuilder.FolderDistition);
-                var filename = $"updateFor_{updateParameter.CurrentVersion}_{Guid.NewGuid()}.zip";
+                var fileApp = Path.GetFileName(updateParameter.ArgumentBuilder.RunProgramFile);
+                if (string.IsNullOrWhiteSpace(fileApp)) fileApp = assemblyMain.ManifestModule?.Name;
+                var filename = $"{fileApp}_v{updateParameter.CurrentVersion}_{DateTime.Now.Ticks}.zip";
                 updateParameter.PathFileZip = Path.Combine(dir, filename);
                 dir = Path.GetDirectoryName(updateParameter.PathFileZip);
                 Directory.CreateDirectory(dir);
@@ -46,9 +48,13 @@ namespace UpdaterLibrary
             updateParameter.OnLog?.Invoke($"PathFolderApplication={updateParameter.ArgumentBuilder.FolderDistition}");
             updateParameter.OnLog?.Invoke($"PathToSaveFile={updateParameter.PathFileZip}");
 
-            var lastestInfo = await GetLatestVerionAsync(updateParameter);
-            var hasNewVersion = await CheckForUpdateAsync(updateParameter, lastestInfo);
-            if (!hasNewVersion) return "latest";
+            LastestVersionInfo lastestInfo = lastestVersionInfo ?? await GetLatestVerionAsync(updateParameter);
+            var isForce = updateParameter.ArgumentBuilder.ForceUpdate;
+            if (!isForce)
+            {
+                var hasNewVersion = await CheckForUpdateAsync(updateParameter, lastestInfo);
+                if (!hasNewVersion) return "latest";
+            }
 
             if (await DownloadFile(updateParameter, lastestInfo))
             {
@@ -130,29 +136,30 @@ namespace UpdaterLibrary
         {
             processReplaceAndRun = null;
 
-            var folderExtractor = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            //check file Extractor
             var nameExtractor = "UpdaterLibrary.Extractor.exe";
-            var resourceExtractor = $"UpdaterLibrary.Runner.{nameExtractor}";
+            var currentPathFileExtractor = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, nameExtractor);
+            if (!File.Exists(currentPathFileExtractor))
+                throw new Exception($"Not found tool {currentPathFileExtractor}");
+
+            //copy file Extractor to another dir
+            var folderExtractor = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var pathFileExtractor = Path.Combine(folderExtractor, nameExtractor);
-
             if (File.Exists(pathFileExtractor)) File.Delete(pathFileExtractor);
-
+            File.Copy(currentPathFileExtractor, pathFileExtractor, true);
             if (!File.Exists(pathFileExtractor))
-            {
-                Assembly assembly = Assembly.GetExecutingAssembly();
-                using (Stream stream = assembly.GetManifestResourceStream(resourceExtractor))
-                {
-                    // Ghi file exe ra đĩa cứng
-                    byte[] bytes = new byte[stream.Length];
-                    stream.Read(bytes, 0, bytes.Length);
-                    File.WriteAllBytes(pathFileExtractor, bytes);
-                }
-            }
+                throw new Exception($"Can not copy tool {currentPathFileExtractor} to {pathFileExtractor}");
 
-            if (!File.Exists(pathFileExtractor)) return false;
-
+            //concat arguments
+            var parentArgument = Environment.GetCommandLineArgs();
+            var parentArgumentString = string.Join(" ", parentArgument);
             var argumentString = updateParameter.ArgumentBuilder.ToCommandArgument();
-            Process.Start(pathFileExtractor, argumentString);
+            var finalArgument = $"{parentArgumentString} {argumentString}";
+
+            //run
+            Console.WriteLine(pathFileExtractor);
+            Console.WriteLine(finalArgument);
+            Process.Start(pathFileExtractor, finalArgument);
             return true;
         }
 
@@ -181,7 +188,7 @@ namespace UpdaterLibrary
                     var isDirectory = item.FullName.EndsWith("/") || item.FullName.EndsWith("\\");
                     var directory = isDirectory ? path : Path.GetDirectoryName(path);
                     Directory.CreateDirectory(directory);
-                    if (isDirectory)
+                    if (!isDirectory)
                     {
                         if (File.Exists(path)) File.Delete(path);
                         item.ExtractToFile(path);
@@ -192,7 +199,8 @@ namespace UpdaterLibrary
             }
 
             //delete file zip
-            if (File.Exists(fileZip)) File.Delete(fileZip);
+            var isKeep = updateParameter.ArgumentBuilder.KeepFolderSourceIfSuccess;
+            if (!isKeep && File.Exists(fileZip)) File.Delete(fileZip);
 
             return true;
         }

@@ -13,14 +13,6 @@
 		<Authors>tiephoangdev</Authors>
 	</PropertyGroup>
 	<ItemGroup>
-	  <None Remove="Runner\UpdaterLibrary.Extractor.exe" />
-	</ItemGroup>
-	<ItemGroup>
-	  <EmbeddedResource Include="Runner\UpdaterLibrary.Extractor.exe">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </EmbeddedResource>
-	</ItemGroup>
-	<ItemGroup>
 		<Reference Include="System.IO.Compression" />
 		<Reference Include="System.Net.Http">
 			<HintPath>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\Microsoft.NET.Build.Extensions\net461\lib\System.Net.Http.dll</HintPath>

@@ -16,6 +16,11 @@ public class ArgumentBuilder
     public bool KeepFolderSourceIfSuccess { get; set; }
 
     /// <summary>
+    /// Force Update
+    /// </summary>
+    public bool ForceUpdate { get; set; }
+
+    /// <summary>
     /// Directory of application. allow null.
     /// </summary>
     public string FolderDistition { get; set; }
@@ -43,6 +48,7 @@ public class ArgumentBuilder
         stringBuilder.Append($" --from \"{FolderSource}\" ");
         stringBuilder.Append($" --to \"{FolderDistition}\" ");
         stringBuilder.Append($" --keep \"{KeepFolderSourceIfSuccess}\" ");
+        stringBuilder.Append($" --force \"{ForceUpdate}\" ");
         if (PauseClose > 0)
             stringBuilder.Append($" --pause \"{PauseClose}\" ");
         if (!string.IsNullOrWhiteSpace(ExecuteCmdWhenCopySuccessful))
@@ -62,8 +68,9 @@ public class ArgumentBuilder
             $"--to FolderDistition* : forder to replace all files",
             $"[--executecmd ExecuteCmdWhenCopySuccessful] : if provider. list command will run after copy success. split by | and replace ` => \" ",
             $"[--runapp RunProgramFile] : if provider. the file will open by cmd.exe ",
-            $"[--keep true] : if provider. Keep Folder Source If Success ",
-            $"[--pause 10] : if provider. The view console will Pause Close on ms ",
+            $"[--keep false] : if provider. Keep Folder Source If Success ",
+            $"[--force false] : if provider. Force update ",
+            $"[--pause 0] : if provider. The view console will Pause Close on ms ",
             $"The end. Thanks for use my program.",
             $" tiephoang.dev@gmail.com"
         };
@@ -100,6 +107,9 @@ public class ArgumentBuilder
                     break;
                 case "--keep":
                     argument.KeepFolderSourceIfSuccess = Convert.ToBoolean(args[i + 1]);
+                    break;
+                case "--force":
+                    argument.ForceUpdate = Convert.ToBoolean(args[i + 1]);
                     break;
                 default:
                     break;

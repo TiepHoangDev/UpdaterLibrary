@@ -63,7 +63,7 @@ namespace UpdaterLibrary
                     RunProgramFile = runProgramFile,
                     ExecuteCmdWhenCopySuccessfuls = executeCmdWhenCopySuccessfuls ?? new List<string>(),
                     FolderDistition = folderApplication,
-                    FolderSource = folderExtractedZip
+                    FolderSource = folderExtractedZip,
                 },
                 CurrentVersion = currentVersion,
                 ExitApplication = exitApplication,
