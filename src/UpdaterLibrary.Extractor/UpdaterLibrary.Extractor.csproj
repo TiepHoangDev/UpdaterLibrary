@@ -4,7 +4,6 @@
 		<OutputType>Exe</OutputType>
 		<AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<OutputPath>..\UpdaterLibrary\Runner\</OutputPath>
 	</PropertyGroup>
 	<PropertyGroup>
 		<BuildVersion>$([System.DateTime]::UtcNow.ToLocalTime().ToString("yyyy.M.d.Hmm"))</BuildVersion>
@@ -24,7 +23,11 @@
 	</PropertyGroup>
 	<PropertyGroup>
 		<DebugType>none</DebugType>
+		<ApplicationIcon>KSP3_Update.ico</ApplicationIcon>
 	</PropertyGroup>
+	<ItemGroup>
+	  <Content Include="KSP3_Update.ico" />
+	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody">
 			<Version>5.7.0</Version>
