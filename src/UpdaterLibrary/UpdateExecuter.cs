@@ -41,9 +41,7 @@ namespace UpdaterLibrary
                 Directory.CreateDirectory(dir);
             }
 
-#if DEBUG
             updateParameter.OnLog?.Invoke($"UrlGetInfoUpdate={updateParameter.UrlGetInfoUpdate}");
-#endif
             updateParameter.OnLog?.Invoke($"CurrentVersion={updateParameter.CurrentVersion}");
             updateParameter.OnLog?.Invoke($"PathFolderApplication={updateParameter.ArgumentBuilder.FolderDistition}");
             updateParameter.OnLog?.Invoke($"PathToSaveFile={updateParameter.PathFileZip}");
