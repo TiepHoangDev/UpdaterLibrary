@@ -63,16 +63,8 @@ namespace UpdaterLibrary.Extractor
 
                 //COPY
                 Console.WriteLine($"======================== COPY =====================");
-                var cmd = $"\"{argument.FolderSource}\\\" \"{argument.FolderDistition}\\\" /s /e /y";
-                var processCopy = Process.Start(new ProcessStartInfo
-                {
-                    FileName = "xcopy.exe",
-                    Arguments = cmd,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden
-                });
-                processCopy.WaitForExit();
+                var cmd = $"\"{argument.FolderSource}\\\" \"{argument.FolderDistition}\\\" /e /y /h /c /i /r";
+                ProgramHelper.RunCmd(cmd, "xcopy.exe");
                 Console.WriteLine(">\t Copy successfully.");
 
                 //RUN SUCCESS COMMAND
@@ -80,34 +72,17 @@ namespace UpdaterLibrary.Extractor
                 {
                     Console.WriteLine($"======================= RUN SUCCESS COMMAND ======================");
                     Console.WriteLine($">\t Execute command: {command}");
-                    var myCommand = $"/C {command}";
-                    ProcessStartInfo startInfo = new ProcessStartInfo()
-                    {
-                        WindowStyle = ProcessWindowStyle.Hidden,
-                        UseShellExecute = false,
-
-                        FileName = "cmd.exe",
-                        Arguments = myCommand,
-                        Verb = "runas",
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                    };
-                    var process = Process.Start(startInfo);
-
-                    string error = process.StandardError.ReadToEnd()?.Trim();
-                    string output = process.StandardOutput.ReadToEnd().Trim();
-                    process.WaitForExit();
-
-                    Console.WriteLine($">\t Output: {output}");
-                    if (!string.IsNullOrWhiteSpace(error))
-                    {
-                        Console.WriteLine($">\t Exception: {error}");
-                        return false;
-                    }
+                    var output = ProgramHelper.RunCmd($"/C {command}", "cmd.exe", LogMessage: Console.WriteLine);
                     await Task.Delay(1000);
-                    return true;
                 }
+
+                if (!argument.KeepFolderSourceIfSuccess)
+                {
+                    Console.WriteLine($">\t Delete folder source after successful.");
+                    Directory.Delete(argument.FolderSource, true);
+                }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -124,14 +99,7 @@ namespace UpdaterLibrary.Extractor
                     if (File.Exists(argument.RunProgramFile))
                     {
                         Console.WriteLine($">\t Run RunProgramFile: {argument.RunProgramFile}");
-                        var start = new ProcessStartInfo
-                        {
-                            FileName = "cmd.exe",
-                            Arguments = $"/C \"{argument.RunProgramFile}\" ",
-                            CreateNoWindow = true,
-                            UseShellExecute = false,
-                        };
-                        Process.Start(start);
+                        Process.Start(argument.RunProgramFile.Trim());
                     }
                     else
                     {

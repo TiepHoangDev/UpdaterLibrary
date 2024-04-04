@@ -44,7 +44,7 @@ namespace UpdaterLibrary
         /// <summary>
         /// ArgumentBuilder parameter to pass to Extrator.
         /// </summary>
-        public ArgumentBuilder ArgumentBuilder { get; private set; } = new ArgumentBuilder();
+        public ArgumentBuilder ArgumentBuilder { get; set; } = new ArgumentBuilder();
 
         public static UpdateParameter CreateForCheckUpdate(string urlGetInfoUpdate,
             string currentVersion,
@@ -63,7 +63,7 @@ namespace UpdaterLibrary
                     RunProgramFile = runProgramFile,
                     ExecuteCmdWhenCopySuccessfuls = executeCmdWhenCopySuccessfuls ?? new List<string>(),
                     FolderDistition = folderApplication,
-                    FolderSource = folderExtractedZip
+                    FolderSource = folderExtractedZip,
                 },
                 CurrentVersion = currentVersion,
                 ExitApplication = exitApplication,

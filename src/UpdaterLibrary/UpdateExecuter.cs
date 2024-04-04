@@ -1,15 +1,13 @@
-﻿using System;
+﻿using ClassHelper;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
-using System.Xml;
 
 namespace UpdaterLibrary
 {
@@ -23,34 +21,42 @@ namespace UpdaterLibrary
         /// </summary>
         /// <param name="updateParameter"></param>
         /// <returns></returns>
-        public async Task<string> RunUpdateAsync(UpdateParameter updateParameter)
+        public async Task<string> RunUpdateAsync(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo = null)
         {
             var assemblyMain = Assembly.GetEntryAssembly();
             if (string.IsNullOrWhiteSpace(updateParameter.ArgumentBuilder.FolderDistition))
             {
                 updateParameter.ArgumentBuilder.FolderDistition = Path.GetDirectoryName(assemblyMain.Location);
+                var dir = Path.GetDirectoryName(updateParameter.ArgumentBuilder.FolderDistition);
+                Directory.CreateDirectory(dir);
             }
             if (string.IsNullOrWhiteSpace(updateParameter.PathFileZip))
             {
-                updateParameter.PathFileZip = Path.Combine(
-                    Path.GetTempPath(),
-                    $"updateFor_{updateParameter.CurrentVersion}_{Guid.NewGuid()}.zip");
+                var dir = Path.GetDirectoryName(updateParameter.ArgumentBuilder.FolderDistition);
+                var fileApp = Path.GetFileName(updateParameter.ArgumentBuilder.RunProgramFile);
+                if (string.IsNullOrWhiteSpace(fileApp)) fileApp = assemblyMain.ManifestModule?.Name;
+                var filename = $"{fileApp}_v{updateParameter.CurrentVersion}_{DateTime.Now.Ticks}.zip";
+                updateParameter.PathFileZip = Path.Combine(dir, filename);
+                dir = Path.GetDirectoryName(updateParameter.PathFileZip);
+                Directory.CreateDirectory(dir);
             }
 
-#if DEBUG
             updateParameter.OnLog?.Invoke($"UrlGetInfoUpdate={updateParameter.UrlGetInfoUpdate}");
-#endif
             updateParameter.OnLog?.Invoke($"CurrentVersion={updateParameter.CurrentVersion}");
             updateParameter.OnLog?.Invoke($"PathFolderApplication={updateParameter.ArgumentBuilder.FolderDistition}");
             updateParameter.OnLog?.Invoke($"PathToSaveFile={updateParameter.PathFileZip}");
 
-            var lastestInfo = await GetLatestVerionAsync(updateParameter);
-            var hasNewVersion = await CheckForUpdateAsync(updateParameter, lastestInfo);
-            if (!hasNewVersion) return null;
+            LastestVersionInfo lastestInfo = lastestVersionInfo ?? await GetLatestVerionAsync(updateParameter);
+            var isForce = updateParameter.ArgumentBuilder.ForceUpdate;
+            if (!isForce)
+            {
+                var hasNewVersion = await CheckForUpdateAsync(updateParameter, lastestInfo);
+                if (!hasNewVersion) return "latest";
+            }
 
             if (await DownloadFile(updateParameter, lastestInfo))
             {
-                updateParameter.OnLog($"Downloaded Successfully");
+                updateParameter.OnLog?.Invoke($"Downloaded Successfully");
                 if (ExtractFileUpdate(updateParameter, lastestInfo))
                 {
                     if (CallReplaceFileApplication(updateParameter, out var processReplaceAndRun))
@@ -58,7 +64,7 @@ namespace UpdaterLibrary
                         updateParameter.ExitApplication?.Invoke();
                         return null;
                     }
-                    return $"Can't copy file update to folder service!";
+                    return $"Can't Call Replace File Application";
                 };
                 return $"Can't extract file update!";
             }
@@ -96,14 +102,31 @@ namespace UpdaterLibrary
 
         public async Task<LastestVersionInfo> GetLatestVerionAsync(UpdateParameter updateParameter)
         {
-            using (var httpClient = new HttpClient())
+            try
             {
-                httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
-                var textInfo = await httpClient.GetStringAsync($"{updateParameter.UrlGetInfoUpdate}?nocahe=true");
-                var stringReader = new StringReader(textInfo);
-                var xmlSerializer = new XmlSerializer(typeof(LastestVersionInfo));
-                var lastestInfo = xmlSerializer.Deserialize(stringReader) as LastestVersionInfo;
-                return lastestInfo;
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
+                    var url = $"{updateParameter.UrlGetInfoUpdate}?nocahe=true";
+                    var reponse = await httpClient.GetAsync(url);
+                    var textInfo = await reponse.Content.ReadAsStringAsync();
+                    if (reponse?.IsSuccessStatusCode ?? false)
+                    {
+                        return LastestVersionInfo.LoadFromXml(textInfo);
+                    }
+                    var msgs = new[] {
+                        $"{(int)reponse.StatusCode} {reponse.RequestMessage.Method} {reponse.ReasonPhrase}",
+                        reponse.RequestMessage.RequestUri.ToString(),
+                        textInfo
+                    };
+                    throw new Exception(string.Join("\n", msgs));
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                ex.Log();
+                throw;
             }
         }
 
@@ -111,93 +134,73 @@ namespace UpdaterLibrary
         {
             processReplaceAndRun = null;
 
-            var folderExtractor = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            //check file Extractor
             var nameExtractor = "UpdaterLibrary.Extractor.exe";
-            var resourceExtractor = $"UpdaterLibrary.Runner.{nameExtractor}";
+            var currentPathFileExtractor = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, nameExtractor);
+            if (!File.Exists(currentPathFileExtractor))
+                throw new Exception($"Not found tool {currentPathFileExtractor}");
+
+            //copy file Extractor to another dir
+            var folderExtractor = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var pathFileExtractor = Path.Combine(folderExtractor, nameExtractor);
-
             if (File.Exists(pathFileExtractor)) File.Delete(pathFileExtractor);
-
+            File.Copy(currentPathFileExtractor, pathFileExtractor, true);
             if (!File.Exists(pathFileExtractor))
-            {
-                Assembly assembly = Assembly.GetExecutingAssembly();
-                using (Stream stream = assembly.GetManifestResourceStream(resourceExtractor))
-                {
-                    // Ghi file exe ra đĩa cứng
-                    byte[] bytes = new byte[stream.Length];
-                    stream.Read(bytes, 0, bytes.Length);
-                    File.WriteAllBytes(pathFileExtractor, bytes);
-                }
-            }
+                throw new Exception($"Can not copy tool {currentPathFileExtractor} to {pathFileExtractor}");
 
-            if (!File.Exists(pathFileExtractor)) return false;
-
+            //concat arguments
+            var parentArgument = Environment.GetCommandLineArgs();
+            var parentArgumentString = string.Join(" ", parentArgument);
             var argumentString = updateParameter.ArgumentBuilder.ToCommandArgument();
-            processReplaceAndRun = Process.Start(new ProcessStartInfo
-            {
-                FileName = pathFileExtractor,
-                Arguments = argumentString,
-                Verb = "runas",
-            });
+            var finalArgument = $"{parentArgumentString} {argumentString}";
 
+            //run
+            Console.WriteLine(pathFileExtractor);
+            Console.WriteLine(finalArgument);
+            Process.Start(pathFileExtractor, finalArgument);
             return true;
         }
 
         private bool ExtractFileUpdate(UpdateParameter updateParameter, LastestVersionInfo lastestInfo)
         {
+            //check file
             var fileZip = updateParameter.PathFileZip;
             if (!File.Exists(fileZip)) return false;
 
-            var folderExtractZip = Path.Combine(
-                    Path.GetDirectoryName(fileZip),
-                    "folderExtractZip"
-                );
+            //empty folder
+            var dir = Path.GetDirectoryName(fileZip);
+            var folderExtractZip = Path.Combine(dir, "folderExtractZip");
             updateParameter.ArgumentBuilder.FolderSource = folderExtractZip;
+            if (Directory.Exists(folderExtractZip)) Directory.Delete(folderExtractZip, true);
+            Directory.CreateDirectory(folderExtractZip);
 
-            using (var archive = ZipFile.OpenRead(fileZip))
+            //extract zip
+            using (var zip = ZipFile.OpenRead(fileZip))
             {
-                var entries = archive.Entries;
-                for (int i = 0; i < entries.Count; i++)
+                var count = zip.Entries.Count;
+                var index = 0F;
+                foreach (var item in zip.Entries)
                 {
-                    var entry = entries[i];
-                    var filePath = Path.Combine(folderExtractZip, entry.FullName);
-                    var folder = Path.GetDirectoryName(filePath);
-                    if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-
-                    if (IsDirectory(entry))
+                    index++;
+                    var path = Path.Combine(folderExtractZip, item.FullName);
+                    var isDirectory = item.FullName.EndsWith("/") || item.FullName.EndsWith("\\");
+                    var directory = isDirectory ? path : Path.GetDirectoryName(path);
+                    Directory.CreateDirectory(directory);
+                    if (!isDirectory)
                     {
-                        if (!Directory.Exists(filePath))
-                        {
-                            Directory.CreateDirectory(filePath);
-                        }
+                        if (File.Exists(path)) File.Delete(path);
+                        item.ExtractToFile(path);
                     }
-                    else
-                    {
-                        if (File.Exists(filePath))
-                        {
-                            updateParameter.OnLog($"Delete file {filePath}");
-                            File.Delete(filePath);
-                        }
-
-                        using (Stream destination = File.Open(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-                        {
-                            using (Stream stream = entry.Open())
-                            {
-                                stream.CopyTo(destination);
-                                destination.SetLength(destination.Position);
-                            }
-                        }
-                    }
-
-                    updateParameter.OnLog($"{i + 1}. Extracted {entry.FullName} {i + 1}/{entries.Count}");
+                    var percent = Math.Round(index * 100 / count);
+                    updateParameter.OnLog?.Invoke($"[{percent}%] {path}");
                 }
-                return true;
             }
-        }
 
-        public static bool IsDirectory(ZipArchiveEntry entry)
-        {
-            return string.IsNullOrEmpty(entry.Name) && (entry.FullName.EndsWith("/") || entry.FullName.EndsWith(@"\"));
+            //delete file zip
+            var isKeep = updateParameter.ArgumentBuilder.KeepFolderSourceIfSuccess;
+            if (!isKeep && File.Exists(fileZip)) File.Delete(fileZip);
+
+            return true;
         }
 
         private async Task<bool> DownloadFile(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo)

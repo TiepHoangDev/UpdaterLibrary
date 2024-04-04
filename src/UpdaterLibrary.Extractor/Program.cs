@@ -23,14 +23,16 @@ namespace UpdaterLibrary.Extractor
                 var argument = ArgumentBuilder.GetCommandLineArgs();
                 LogToFile(argument.ToCommandArgument());
                 new ExtractorRunner().Run(argument).GetAwaiter().GetResult();
-                Console.WriteLine("====================================Exit after 3 seconds====================================");
-                Thread.Sleep(3000);
+
+                if (argument.PauseClose > 0)
+                {
+                    Console.WriteLine($"====================================Exit after {argument.PauseClose} seconds====================================");
+                    Thread.Sleep(TimeSpan.FromSeconds(argument.PauseClose.Value));
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                Console.WriteLine("==================================Press key to exit======================================");
-                Console.ReadKey();
                 LogToFile(ex);
             }
         }
