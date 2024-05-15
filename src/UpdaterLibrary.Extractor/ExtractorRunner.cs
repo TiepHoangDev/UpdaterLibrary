@@ -55,6 +55,9 @@ namespace UpdaterLibrary.Extractor
                         {
                             Console.WriteLine(ex);
                             Program.LogToFile(ex);
+
+                            Console.WriteLine($"Please kill process {argument.RunProgramFile.Trim()} to update program. Press enter if sure it not running!");
+                            Console.ReadKey();
                         }
                     }
                 }
