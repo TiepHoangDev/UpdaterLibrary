@@ -19,7 +19,7 @@ namespace UpdaterLibrary
         /// </summary>
         /// <param name="updateParameter"></param>
         /// <returns></returns>
-        public async Task<string> RunUpdateAsync(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo = null)
+        public async Task<UpdatingJob> RunUpdateAsync(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo = null)
         {
             var assemblyMain = Assembly.GetEntryAssembly();
             if (string.IsNullOrWhiteSpace(updateParameter.ArgumentBuilder.FolderDistition))
@@ -49,9 +49,22 @@ namespace UpdaterLibrary
             if (!isForce)
             {
                 var hasNewVersion = await CheckForUpdateAsync(updateParameter, lastestInfo);
-                if (!hasNewVersion) return "latest";
+                if (!hasNewVersion) return new UpdatingJob
+                {
+                    MessageError = "latest",
+                    IsSuccess = true,
+                    IsComplete = true,
+                    ProcessReplaceFile = null
+                };
             }
 
+            var job = new UpdatingJob
+            {
+                MessageError = null,
+                IsSuccess = false,
+                IsComplete = true,
+                ProcessReplaceFile = null
+            };
             if (await DownloadFile(updateParameter, lastestInfo))
             {
                 updateParameter.OnLog?.Invoke($"Downloaded Successfully");
@@ -60,13 +73,22 @@ namespace UpdaterLibrary
                     if (CallReplaceFileApplication(updateParameter, out var processReplaceAndRun))
                     {
                         updateParameter.ExitApplication?.Invoke();
-                        return null;
+                        return new UpdatingJob
+                        {
+                            MessageError = null,
+                            ProcessReplaceFile = processReplaceAndRun,
+                            IsComplete = false,
+                            IsSuccess = null,
+                        };
                     }
-                    return $"Can't Call Replace File Application";
+                    job.MessageError = $"Can't Call Replace File Application";
+                    return job;
                 };
-                return $"Can't extract file update!";
+                job.MessageError = $"Can't extract file update!";
+                return job;
             }
-            return $"Can't download file update!";
+            job.MessageError = $"Can't download file update!";
+            return job;
         }
 
         public async Task<bool> CheckForUpdateAsync(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo = null)
@@ -155,7 +177,7 @@ namespace UpdaterLibrary
             //run
             Console.WriteLine(pathFileExtractor);
             Console.WriteLine(finalArgument);
-            Process.Start(pathFileExtractor, finalArgument);
+            processReplaceAndRun = Process.Start(pathFileExtractor, finalArgument);
             return true;
         }
 
