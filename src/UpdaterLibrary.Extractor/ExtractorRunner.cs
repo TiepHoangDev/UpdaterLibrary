@@ -64,11 +64,14 @@ namespace UpdaterLibrary.Extractor
                 }
 
                 //BACKUP
-                Console.WriteLine($"======================== BACKUP =====================");
-                var fileZip = $"{argument.FolderDistition}.backup.zip";
-                if(File.Exists(fileZip)) File.Delete(fileZip);
-                ZipFile.CreateFromDirectory(argument.FolderDistition, fileZip);
-                Console.WriteLine($">\t Backup successfully at {fileZip}.");
+                if (Directory.Exists(argument.FolderDistition))
+                {
+                    Console.WriteLine($"======================== BACKUP =====================");
+                    var fileZip = $"{argument.FolderDistition}.backup.zip";
+                    if (File.Exists(fileZip)) File.Delete(fileZip);
+                    ZipFile.CreateFromDirectory(argument.FolderDistition, fileZip);
+                    Console.WriteLine($">\t Backup successfully at {fileZip}.");
+                }
 
                 //COPY
                 Console.WriteLine($"======================== COPY =====================");
