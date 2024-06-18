@@ -72,7 +72,7 @@ namespace UpdaterLibrary
                 {
                     if (TriggerReplaceFileApplication(updateParameter, out var processReplaceAndRun))
                     {
-                        await updateParameter.ExitApplication?.Invoke();
+                        if (updateParameter.ExitApplication != null) await updateParameter.ExitApplication.Invoke();
                         return new UpdatingJob
                         {
                             MessageError = null,
