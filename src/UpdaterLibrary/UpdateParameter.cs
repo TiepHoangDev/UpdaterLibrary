@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace UpdaterLibrary
@@ -29,12 +27,12 @@ namespace UpdaterLibrary
         /// <summary>
         /// Action write log update. allow null
         /// </summary>
-        public Action<string> OnLog { get; set; }
+        public Func<string, Task> OnLog { get; set; }
 
         /// <summary>
         /// Action exit app when update ready to run. allow null.
         /// </summary>
-        public Action ExitApplication { get; set; }
+        public Func<Task> ExitApplication { get; set; }
 
         /// <summary>
         /// Path file name .zip to save after download update. allow null.
@@ -49,8 +47,8 @@ namespace UpdaterLibrary
         public static UpdateParameter CreateForCheckUpdate(string urlGetInfoUpdate,
             string currentVersion,
             string runProgramFile = default,
-            Action exitApplication = default,
-            Action<string> onLog = default,
+            Func<Task> exitApplication = default,
+            Func<string, Task> onLog = default,
             string folderApplication = default,
             List<string> executeCmdWhenCopySuccessfuls = default,
             string folderExtractedZip = default,

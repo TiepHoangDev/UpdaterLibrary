@@ -1,7 +1,5 @@
 ﻿using ClassHelper;
-using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -21,7 +19,7 @@ namespace UpdaterLibrary
         /// </summary>
         /// <param name="updateParameter"></param>
         /// <returns></returns>
-        public async Task<string> RunUpdateAsync(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo = null)
+        public async Task<UpdatingJob> RunUpdateAsync(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo = null)
         {
             var assemblyMain = Assembly.GetEntryAssembly();
             if (string.IsNullOrWhiteSpace(updateParameter.ArgumentBuilder.FolderDistition))
@@ -41,34 +39,56 @@ namespace UpdaterLibrary
                 Directory.CreateDirectory(dir);
             }
 
-            updateParameter.OnLog?.Invoke($"UrlGetInfoUpdate={updateParameter.UrlGetInfoUpdate}");
-            updateParameter.OnLog?.Invoke($"CurrentVersion={updateParameter.CurrentVersion}");
-            updateParameter.OnLog?.Invoke($"PathFolderApplication={updateParameter.ArgumentBuilder.FolderDistition}");
-            updateParameter.OnLog?.Invoke($"PathToSaveFile={updateParameter.PathFileZip}");
+            await updateParameter.OnLog?.Invoke($"UrlGetInfoUpdate={updateParameter.UrlGetInfoUpdate}");
+            await updateParameter.OnLog?.Invoke($"CurrentVersion={updateParameter.CurrentVersion}");
+            await updateParameter.OnLog?.Invoke($"PathFolderApplication={updateParameter.ArgumentBuilder.FolderDistition}");
+            await updateParameter.OnLog?.Invoke($"PathToSaveFile={updateParameter.PathFileZip}");
 
             LastestVersionInfo lastestInfo = lastestVersionInfo ?? await GetLatestVerionAsync(updateParameter);
             var isForce = updateParameter.ArgumentBuilder.ForceUpdate;
             if (!isForce)
             {
                 var hasNewVersion = await CheckForUpdateAsync(updateParameter, lastestInfo);
-                if (!hasNewVersion) return "latest";
+                if (!hasNewVersion) return new UpdatingJob
+                {
+                    MessageError = "latest",
+                    IsSuccess = true,
+                    IsComplete = true,
+                    ProcessReplaceFile = null
+                };
             }
 
+            var job = new UpdatingJob
+            {
+                MessageError = null,
+                IsSuccess = false,
+                IsComplete = true,
+                ProcessReplaceFile = null
+            };
             if (await DownloadFile(updateParameter, lastestInfo))
             {
-                updateParameter.OnLog?.Invoke($"Downloaded Successfully");
-                if (ExtractFileUpdate(updateParameter, lastestInfo))
+                await updateParameter.OnLog?.Invoke($"Downloaded Successfully");
+                if (await ExtractFileUpdate(updateParameter, lastestInfo))
                 {
-                    if (CallReplaceFileApplication(updateParameter, out var processReplaceAndRun))
+                    if (TriggerReplaceFileApplication(updateParameter, out var processReplaceAndRun))
                     {
-                        updateParameter.ExitApplication?.Invoke();
-                        return null;
+                        if (updateParameter.ExitApplication != null) await updateParameter.ExitApplication.Invoke();
+                        return new UpdatingJob
+                        {
+                            MessageError = null,
+                            ProcessReplaceFile = processReplaceAndRun,
+                            IsComplete = false,
+                            IsSuccess = null,
+                        };
                     }
-                    return $"Can't Call Replace File Application";
+                    job.MessageError = $"Can't Call Replace File Application";
+                    return job;
                 };
-                return $"Can't extract file update!";
+                job.MessageError = $"Can't extract file update!";
+                return job;
             }
-            return $"Can't download file update!";
+            job.MessageError = $"Can't download file update!";
+            return job;
         }
 
         public async Task<bool> CheckForUpdateAsync(UpdateParameter updateParameter, LastestVersionInfo lastestVersionInfo = null)
@@ -77,7 +97,7 @@ namespace UpdaterLibrary
             var isAlwaysUpdate = lastestInfo.Version?.Trim() == "*" || string.IsNullOrWhiteSpace(updateParameter.CurrentVersion);
             if (isAlwaysUpdate)
             {
-                updateParameter.OnLog?.Invoke($"Always update application.");
+                await updateParameter.OnLog?.Invoke($"Always update application.");
                 return true;
             }
 
@@ -86,17 +106,17 @@ namespace UpdaterLibrary
             if (lastestVersion < currentVersion)
             {
                 var err = $"Current version is higher than latest version. Current Version={currentVersion}?. Lastest version = {lastestVersion}.";
-                updateParameter.OnLog?.Invoke(err);
+                await updateParameter.OnLog?.Invoke(err);
                 return false;
             }
 
             if (lastestVersion == currentVersion)
             {
                 var err = $"You version is lastest.";
-                updateParameter.OnLog?.Invoke(err);
+                await updateParameter.OnLog?.Invoke(err);
                 return false;
             }
-            updateParameter.OnLog?.Invoke($"Have new version. Need to upgrate from {currentVersion} -> {lastestVersion}.");
+            await updateParameter.OnLog?.Invoke($"Have new version. Need to upgrate from {currentVersion} -> {lastestVersion}.");
             return true;
         }
 
@@ -130,7 +150,7 @@ namespace UpdaterLibrary
             }
         }
 
-        private bool CallReplaceFileApplication(UpdateParameter updateParameter, out Process processReplaceAndRun)
+        private bool TriggerReplaceFileApplication(UpdateParameter updateParameter, out Process processReplaceAndRun)
         {
             processReplaceAndRun = null;
 
@@ -157,11 +177,11 @@ namespace UpdaterLibrary
             //run
             Console.WriteLine(pathFileExtractor);
             Console.WriteLine(finalArgument);
-            Process.Start(pathFileExtractor, finalArgument);
+            processReplaceAndRun = Process.Start(pathFileExtractor, finalArgument);
             return true;
         }
 
-        private bool ExtractFileUpdate(UpdateParameter updateParameter, LastestVersionInfo lastestInfo)
+        private async Task<bool> ExtractFileUpdate(UpdateParameter updateParameter, LastestVersionInfo lastestInfo)
         {
             //check file
             var fileZip = updateParameter.PathFileZip;
@@ -192,7 +212,7 @@ namespace UpdaterLibrary
                         item.ExtractToFile(path);
                     }
                     var percent = Math.Round(index * 100 / count);
-                    updateParameter.OnLog?.Invoke($"[{percent}%] {path}");
+                    await updateParameter.OnLog?.Invoke($"[{percent}%] {path}");
                 }
             }
 
@@ -210,7 +230,7 @@ namespace UpdaterLibrary
                 var response = await client.GetAsync(lastestVersionInfo.LinkDownloadZipFile, HttpCompletionOption.ResponseHeadersRead);
                 if (response?.IsSuccessStatusCode != true)
                 {
-                    updateParameter.OnLog($"Download GET from {lastestVersionInfo.LinkDownloadZipFile} is {response?.StatusCode}: {response?.ReasonPhrase}");
+                    await updateParameter.OnLog($"Download GET from {lastestVersionInfo.LinkDownloadZipFile} is {response?.StatusCode}: {response?.ReasonPhrase}");
                     response?.Dispose();
                     return false;
                 }
@@ -241,7 +261,7 @@ namespace UpdaterLibrary
                             var percent = readBytes * 100D / totalBytes;
                             if (percent - lastPercent >= 1)
                             {
-                                updateParameter.OnLog($"Downloaded {readBytes / 1024}Kb ({percent:F2}%)");
+                                await updateParameter.OnLog($"Downloaded {readBytes / 1024}Kb ({percent:F2}%)");
                                 lastPercent = percent;
                             }
                         }

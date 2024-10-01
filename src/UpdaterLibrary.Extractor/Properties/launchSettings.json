@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "UpdaterLibrary.Extractor": {
+      "commandName": "Project",
+      "commandLineArgs": "--from D:\\PROJECTS\\KSP3\\KSP3.DesktopApp\\bin\\folderExtractZip --to D:\\PROJECTS\\KSP3\\KSP3.DesktopApp\\bin\\Service"
+    }
+  }
+}
