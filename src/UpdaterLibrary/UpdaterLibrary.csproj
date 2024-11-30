@@ -30,8 +30,24 @@
 			<HintPath>C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\Microsoft.NET.Build.Extensions\net461\lib\System.Net.Http.dll</HintPath>
 		</Reference>
 	</ItemGroup>
+	<!-- Thêm target để build project phụ -->
+	<Target Name="BuildDependentProject" BeforeTargets="Build">
+		<MSBuild Projects="..\UpdaterLibrary.Extractor\UpdaterLibrary.Extractor.csproj"
+				 Targets="Build"
+				 Properties="Configuration=$(Configuration)" />
+	</Target>
+
+	<!-- Sao chép file EXE từ project phụ vào thư mục output của project chính -->
+	<Target Name="CopyFilesAfterBuild" AfterTargets="Build">
+		<Copy SourceFiles="..\UpdaterLibrary.Extractor\bin\$(Configuration)\UpdaterLibrary.Extractor.exe"
+			  DestinationFolder="$(OutputPath)" />
+	</Target>
+
+	<!-- Đóng gói file EXE vào NuGet package -->
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\ClassHelper\ClassHelper.csproj"/>
-		<ProjectReference Include="..\UpdaterLibrary.Extractor\UpdaterLibrary.Extractor.csproj"/>
+		<Content Include="$(OutputPath)\UpdaterLibrary.Extractor.exe">
+			<Pack>true</Pack>
+			<PackagePath>lib/net461/</PackagePath>
+		</Content>
 	</ItemGroup>
 </Project>
