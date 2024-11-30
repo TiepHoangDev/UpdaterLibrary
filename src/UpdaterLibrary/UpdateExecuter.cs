@@ -1,5 +1,4 @@
-﻿using ClassHelper;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -145,7 +144,6 @@ namespace UpdaterLibrary
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
-                ex.Log();
                 throw;
             }
         }
