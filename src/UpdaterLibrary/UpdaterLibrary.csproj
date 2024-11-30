@@ -12,6 +12,13 @@
 		<AssemblyVersion>$(BuildVersion)</AssemblyVersion>
 		<Authors>tiephoangdev</Authors>
 	</PropertyGroup>
+	<PropertyGroup>
+		<PackageId>UpdaterLibrary</PackageId>
+		<Version>$(BuildVersion)</Version>
+		<Description>Updater Library for net461: winform + service</Description>
+		<PackageTags>UpdaterLibrary</PackageTags>
+		<RepositoryUrl>https://github.com/TiepHoangDev/UpdaterLibrary</RepositoryUrl>
+	</PropertyGroup>
 	<ItemGroup>
 		<Reference Include="System.IO.Compression" />
 		<Reference Include="System.Net.Http">
@@ -27,7 +34,7 @@
 		<PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\..\..\ClassHelper\ClassHelper.csproj" />
-	  <ProjectReference Include="..\UpdaterLibrary.Extractor\UpdaterLibrary.Extractor.csproj" />
+		<ProjectReference Include="..\..\..\ClassHelper\ClassHelper.csproj" />
+		<ProjectReference Include="..\UpdaterLibrary.Extractor\UpdaterLibrary.Extractor.csproj" />
 	</ItemGroup>
 </Project>
