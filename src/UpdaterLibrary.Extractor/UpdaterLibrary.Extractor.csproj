@@ -23,10 +23,10 @@
 	</PropertyGroup>
 	<PropertyGroup>
 		<DebugType>none</DebugType>
-		<ApplicationIcon>KSP3_Update.ico</ApplicationIcon>
+		<ApplicationIcon>download.ico</ApplicationIcon>
 	</PropertyGroup>
 	<ItemGroup>
-	  <Content Include="KSP3_Update.ico" />
+	  <Content Include="download.ico" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Costura.Fody">
@@ -34,8 +34,5 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="NLog" Version="5.2.8" />
 	</ItemGroup>
 </Project>

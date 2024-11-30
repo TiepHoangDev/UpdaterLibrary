@@ -18,7 +18,12 @@
 		<Description>Updater Library for net461: winform + service</Description>
 		<PackageTags>UpdaterLibrary</PackageTags>
 		<RepositoryUrl>https://github.com/TiepHoangDev/UpdaterLibrary</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="../../README.md" Pack="true" PackagePath="." />
+	</ItemGroup>
 	<ItemGroup>
 		<Reference Include="System.IO.Compression" />
 		<Reference Include="System.Net.Http">
@@ -26,15 +31,7 @@
 		</Reference>
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="AutoMapper" Version="10.1.1" />
-		<PackageReference Include="Dapper" Version="2.1.35" />
-		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="NLog" Version="5.2.8" />
-		<PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-	</ItemGroup>
-	<ItemGroup>
-		<ProjectReference Include="..\..\..\ClassHelper\ClassHelper.csproj" />
-		<ProjectReference Include="..\UpdaterLibrary.Extractor\UpdaterLibrary.Extractor.csproj" />
+		<ProjectReference Include="..\..\..\ClassHelper\ClassHelper.csproj"/>
+		<ProjectReference Include="..\UpdaterLibrary.Extractor\UpdaterLibrary.Extractor.csproj"/>
 	</ItemGroup>
 </Project>
